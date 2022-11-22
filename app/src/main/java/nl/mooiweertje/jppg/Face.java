@@ -304,8 +304,8 @@ public class Face extends CanvasWatchFaceService {
             //ntext context =Context.
             int b = WearableButtons.getButtonCount(Face.this);
             System.out.println("butts: " + b);
-            System.out.println("butts: " + b);
-/*
+
+            /*
             WearableButtons.ButtonInfo buttonInfo =
                     WearableButtons.getButtonInfo(Face.this, KeyEvent.KEYCODE_STEM_1);
             System.out.println("1: " + buttonInfo.getKeycode());
