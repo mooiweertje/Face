@@ -1,7 +1,5 @@
 package nl.mooiweertje.jppg;
 
-import static android.hardware.SensorManager.PRESSURE_STANDARD_ATMOSPHERE;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -24,6 +22,7 @@ import android.hardware.input.InputManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -68,8 +67,8 @@ public class Face extends CanvasWatchFaceService {
      */
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int FONTSIZE = 100;
-    public  static final float PRESSURE_STANDARD_ATMOSPHERE_AMSTERDAM = 1015F;
-    public  static final float PRESSURE_STANDARD_ATMOSPHERE_QNH = 1013.25F;
+    public static final float PRESSURE_STANDARD_ATMOSPHERE_AMSTERDAM = 1015F;
+    public static final float PRESSURE_STANDARD_ATMOSPHERE_QNH = 1013.25F;
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
@@ -84,7 +83,13 @@ public class Face extends CanvasWatchFaceService {
     private MagnetListener magnetListener;
     private static int speed = 100;
     private static float pressure = 0;
+    // private static float sealevelPressure = 890.1234F;
+    private static float sealevelPressure = PRESSURE_STANDARD_ATMOSPHERE_QNH;
     private static float northBearing = 0;
+    private static float toBearing = 0;
+    private static float fromBearing = 0;
+    private static Location toLocation;
+    private static Location fromLocation;
     // LocationActivity locationActivity;
 
     @Override
@@ -121,24 +126,24 @@ public class Face extends CanvasWatchFaceService {
             northBearing = force;
             //System.out.println("force: " + force);
             //System.out.println("northBearing: " + northBearing);
-            if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR){
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
                 float[] xRotAngles = new float[9];
                 SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
                 SensorManager.getOrientation(rotationMatrix, xRotAngles);
 
                 xRot = (float) Math.round(Math.toDegrees(xRotAngles[1]));
 
-                if (xRot <= -70 && xRot>= -80){
+                if (xRot <= -70 && xRot >= -80) {
                     vertical = true;
-                }else if (xRot >= 70 && xRot <= 80){
+                } else if (xRot >= 70 && xRot <= 80) {
                     vertical = true;
-                }else if (xRot <= -10 && xRot >= -20){
-                    vertical =false;
+                } else if (xRot <= -10 && xRot >= -20) {
+                    vertical = false;
                 } else if (xRot >= 10 && xRot <= 20) {
                     vertical = false;
                 }
 
-                if (vertical){
+                if (vertical) {
                     float[] verticalMatrix = new float[9];
                     SensorManager.remapCoordinateSystem(rotationMatrix,
                             SensorManager.AXIS_X,
@@ -146,12 +151,12 @@ public class Face extends CanvasWatchFaceService {
                             verticalMatrix);
                     SensorManager.getOrientation(verticalMatrix, orientationAngles);
                     xRot = (float) Math.toDegrees(orientationAngles[0]);
-                }else {
+                } else {
                     SensorManager.getOrientation(rotationMatrix, orientationAngles);
                     xRot = (float) Math.toDegrees(orientationAngles[1]);
                 }
 
-                float rot = (float) (Math.toDegrees(orientationAngles[0])+360)%360;
+                float rot = (float) (Math.toDegrees(orientationAngles[0]) + 360) % 360;
                 northBearing = -rot;
                 // rotateCompass(rotation, rot);
                 //rotation = rot;
@@ -184,11 +189,18 @@ public class Face extends CanvasWatchFaceService {
 
         @Override
         public void onLocationChanged(@NonNull Location location) {
-            speed = (int) (location.getSpeed()*3.6f);
+            speed = (int) (location.getSpeed() * 3.6f);
+            toBearing = location.bearingTo(toLocation);
+            fromBearing = location.bearingTo(fromLocation);
         }
     }
 
-    private static class ButtonActivity extends Activity {
+    public static class ButtonActivity extends Activity {
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
+            System.out.println("hey 2");
+            return false;
+        }
     }
 
     private static class ButtonHandler extends Handler {
@@ -287,19 +299,22 @@ public class Face extends CanvasWatchFaceService {
         private Paint mAltiPaint;
         private Paint mTinyPaint;
         private Paint mNorthPaint;
+        private Paint mToPaint;
+        private Paint mFromPaint;
         private Bitmap mBackgroundBitmap;
         private Bitmap mGrayBackgroundBitmap;
         private boolean mAmbient;
         private boolean mLowBitAmbient;
         private boolean mBurnInProtection;
 
-        @SuppressLint("NewApi")
+        @SuppressLint({"NewApi", "MissingPermission"})
         @Override
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
-
-
+            //Intent intent=new Intent(Face.this, ButtonActivity.class);
+            //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // startActivity(intent);
 
             //ntext context =Context.
             int b = WearableButtons.getButtonCount(Face.this);
@@ -342,6 +357,7 @@ public class Face extends CanvasWatchFaceService {
             magnetListener = new MagnetListener();
             sensorManager.registerListener(magnetListener, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
+
             /*
             inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
             ButtonListener buttonListener = new ButtonListener() ;
@@ -352,10 +368,19 @@ public class Face extends CanvasWatchFaceService {
 
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             // LocationProvider lp = locationManager.getBestProvider(false);
-            List<String> lps =locationManager.getAllProviders();
-            for (String s :lps) {
+            List<String> lps = locationManager.getAllProviders();
+            for (String s : lps) {
                 System.out.println(s);
             }
+
+            toLocation = new Location(LocationManager.GPS_PROVIDER);
+            fromLocation = new Location(LocationManager.GPS_PROVIDER);
+            fromLocation.setLatitude(Location.convert("52.24321697210127"));
+            fromLocation.setLongitude(Location.convert("5.178221881420735"));
+            toLocation.setLatitude(Location.convert("52.24259487638992"));
+            toLocation.setLongitude(Location.convert("5.164555975802909"));
+
+
 /*
             Criteria c = new Criteria();
             c.setSpeedRequired(true);
@@ -455,7 +480,7 @@ public class Face extends CanvasWatchFaceService {
             mTinyPaint = new Paint();
             mTinyPaint.setColor(Color.CYAN);
             mTinyPaint.setAntiAlias(true);
-            mTinyPaint.setTextSize(30);
+            mTinyPaint.setTextSize(50);
 
             mQuantityPaint = new Paint();
             mQuantityPaint.setColor(Color.GRAY);
@@ -466,7 +491,19 @@ public class Face extends CanvasWatchFaceService {
             mNorthPaint.setColor(Color.RED);
             mNorthPaint.setAntiAlias(true);
             mNorthPaint.setTextSize(50);
-/*
+
+            mToPaint = new Paint();
+            mToPaint.setColor(Color.GREEN);
+            mToPaint.setAntiAlias(true);
+            mToPaint.setStrokeWidth(10);
+            mToPaint.setTextSize(100);
+
+            mFromPaint = new Paint();
+            mFromPaint.setColor(Color.BLUE);
+            mFromPaint.setAntiAlias(true);
+            mFromPaint.setTextSize(100);
+
+            /*
             mTickAndCirclePaint = new Paint();
             mTickAndCirclePaint.setColor(mWatchHandColor);
             mTickAndCirclePaint.setStrokeWidth(SECOND_TICK_STROKE_WIDTH);
@@ -632,9 +669,11 @@ public class Face extends CanvasWatchFaceService {
         public void onTapCommand(int tapType, int x, int y, long eventTime) {
             switch (tapType) {
                 case TAP_TYPE_TOUCH:
+                    //System.out.println("TAPT");
                     // The user has started touching the screen.
                     break;
                 case TAP_TYPE_TOUCH_CANCEL:
+                    //System.out.println("TAPC");
                     // The user has started a different gesture or otherwise cancelled the tap.
                     break;
                 case TAP_TYPE_TAP:
@@ -642,6 +681,20 @@ public class Face extends CanvasWatchFaceService {
                     // TODO: Add code to handle the tap gesture.
                     Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT)
                             .show();
+                    //if (sealevelPressure == 890.1234F) {
+                    if(SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
+                        while (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
+                            sealevelPressure += 0.01;
+                        }
+                    } else {
+                        while (SensorManager.getAltitude(sealevelPressure, pressure) > 17.5F) {
+                            sealevelPressure -= 0.01;
+                        }
+                    }
+                        // String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(homePressure , pressure)).intValue());
+                        // System.out.println("homepressure: " + sealevelPressure);
+                        // PRESSURE_STANDARD_ATMOSPHERE
+                    // }
                     break;
             }
             invalidate();
@@ -669,11 +722,40 @@ public class Face extends CanvasWatchFaceService {
 
         private void drawWatchFace(Canvas canvas) {
 
+            /*
+            northBearing = -10;
+            toBearing = 10;
+            fromBearing = 20;
+             */
 
+            float[] triangle = {mCenterX+5,10f,mCenterX-20,50f,
+                    mCenterX-20,45f,mCenterX+20,45f,
+                    mCenterX+20,50f,mCenterX-5,10f};
+            canvas.save();
+            canvas.rotate(fromBearing+northBearing, mCenterX, mCenterY);
+            canvas.drawText("^", mCenterX-15, 85, mFromPaint);
+            // canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
+            canvas.rotate(toBearing-fromBearing, mCenterX, mCenterY);
+            canvas.drawText("^", mCenterX-15, 85, mToPaint);
+            //canvas.drawCircle(mCenterX, 30, 20, mToPaint);
+            canvas.rotate(-toBearing, mCenterX, mCenterY);
+            canvas.drawText("N", mCenterX-15, 50, mNorthPaint);
+            // canvas.drawLines( triangle, mToPaint);
+            canvas.restore();
+
+
+            /*
             canvas.save();
             canvas.rotate(northBearing, mCenterX, mCenterY);
             canvas.drawText("N", mCenterX, 30, mNorthPaint);
+            canvas.rotate(toBearing, mCenterX, mCenterY);
+            canvas.drawCircle(mCenterX, 30, 20, mToPaint);
+            canvas.rotate(fromBearing, mCenterX, mCenterY);
+            canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
             canvas.restore();
+            */
+
+            // System.out.println("To " + toBearing);
 
             /*
              * Draw ticks. Usually you will want to bake this directly into the photo, but in
@@ -759,20 +841,27 @@ public class Face extends CanvasWatchFaceService {
              */
 
             // MeasuredText speedT = new MeasuredText.Builder((Integer.toString(speed) + "").toCharArray()).build();
-            canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 100, 100, mTinyPaint);
-            canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 300, 100, mTinyPaint);
+            canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 90, 120, mTinyPaint);
+            canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 300, 120, mTinyPaint);
 
             String speedString = Integer.toString(speed);
             int speedPos = 250-speedString.length()*50;
             canvas.drawText(speedString , speedPos, 200, mAltiPaint);
             canvas.drawText("km/u", 270, 200, mQuantityPaint);
-            String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(PRESSURE_STANDARD_ATMOSPHERE , pressure)).intValue());
+            String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(sealevelPressure, pressure)).intValue());
             int altPos = 250-altString.length()*50;
             canvas.drawText(altString, altPos, 300, mAltiPaint);
             canvas.drawText("m", 270, 300, mQuantityPaint);
+            // canvas.drawText(String.valueOf(sealevelPressure).concat("0000000").substring(0,7), 150, 350, mTinyPaint);
+
+            BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
+            canvas.drawText(batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + "%", 170, 350, mTinyPaint);
+
+            /*
             canvas.drawText(String.valueOf(pressure).concat("0000000").substring(0,7), 100, 350, mTinyPaint);
             canvas.drawText(String.valueOf(PRESSURE_STANDARD_ATMOSPHERE).concat("0000000").substring(0,7), 220, 350, mTinyPaint);
             canvas.drawText(String.valueOf(northBearing), 150, 390, mTinyPaint);
+             */
         }
 
         @Override
