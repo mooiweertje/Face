@@ -67,24 +67,23 @@ public class Face extends CanvasWatchFaceService {
      */
     private static final long INTERACTIVE_UPDATE_RATE_MS = TimeUnit.SECONDS.toMillis(1);
     private static final int FONTSIZE = 100;
-    public static final float PRESSURE_STANDARD_ATMOSPHERE_AMSTERDAM = 1015F;
-    public static final float PRESSURE_STANDARD_ATMOSPHERE_QNH = 1013.25F;
+    // public static final float PRESSURE_STANDARD_ATMOSPHERE_AMSTERDAM = 1015F;
+    // public static final float PRESSURE_STANDARD_ATMOSPHERE_QNH = 1013.25F;
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    private InputManager inputManager;
     private SensorManager sensorManager;
     private Sensor pressureSensor;
     private Sensor magnetSensor;
     private PressureListener pressureListener;
     private MagnetListener magnetListener;
-    private static int speed = 100;
+    private static int speed = -1;
     private static float pressure = 0;
-    // private static float sealevelPressure = 890.1234F;
-    private static float sealevelPressure = PRESSURE_STANDARD_ATMOSPHERE_QNH;
+    private static boolean barofixed = false;
+    private static float sealevelPressure = SensorManager.PRESSURE_STANDARD_ATMOSPHERE;
     private static float northBearing = 0;
     private static float toBearing = 0;
     private static float fromBearing = 0;
@@ -195,6 +194,7 @@ public class Face extends CanvasWatchFaceService {
         }
     }
 
+    /*
     public static class ButtonActivity extends Activity {
         @Override
         public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
@@ -237,6 +237,7 @@ public class Face extends CanvasWatchFaceService {
             System.out.println("hey 5");
         }
     }
+     */
 
     private static class EngineHandler extends Handler {
         private final WeakReference<Face.Engine> mWeakReference;
@@ -357,7 +358,6 @@ public class Face extends CanvasWatchFaceService {
             magnetListener = new MagnetListener();
             sensorManager.registerListener(magnetListener, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
-
             /*
             inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
             ButtonListener buttonListener = new ButtonListener() ;
@@ -395,13 +395,13 @@ public class Face extends CanvasWatchFaceService {
             try {
                 // ActivityCompat.requestPermissions(locationActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1234);
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new SpeedListener());
-                speed=1;
+                speed=-1;
             }catch (SecurityException ex) {
                 ex.printStackTrace();
-                speed=111;
+                speed=-2;
             } catch (IllegalArgumentException ex) {
                 ex.printStackTrace();
-                speed=222;
+                speed=-3;
             }
             // ActivityCompat.requestPermissions()
 
@@ -673,28 +673,24 @@ public class Face extends CanvasWatchFaceService {
                     // The user has started touching the screen.
                     break;
                 case TAP_TYPE_TOUCH_CANCEL:
-                    //System.out.println("TAPC");
-                    // The user has started a different gesture or otherwise cancelled the tap.
+                    Toast.makeText(getApplicationContext(), R.string.messageF, Toast.LENGTH_SHORT).show();
+                    barofixed=true;
                     break;
                 case TAP_TYPE_TAP:
-                    // The user has completed the tap gesture.
-                    // TODO: Add code to handle the tap gesture.
-                    Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT)
-                            .show();
-                    //if (sealevelPressure == 890.1234F) {
-                    if(SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
-                        while (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
-                            sealevelPressure += 0.01;
+                    if(!barofixed) {
+                        Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT).show();
+                        if (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
+                            while (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
+                                sealevelPressure += 0.01;
+                            }
+                        } else {
+                            while (SensorManager.getAltitude(sealevelPressure, pressure) > 17.5F) {
+                                sealevelPressure -= 0.01;
+                            }
                         }
                     } else {
-                        while (SensorManager.getAltitude(sealevelPressure, pressure) > 17.5F) {
-                            sealevelPressure -= 0.01;
-                        }
+                        Toast.makeText(getApplicationContext(), R.string.messageF, Toast.LENGTH_SHORT).show();
                     }
-                        // String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(homePressure , pressure)).intValue());
-                        // System.out.println("homepressure: " + sealevelPressure);
-                        // PRESSURE_STANDARD_ATMOSPHERE
-                    // }
                     break;
             }
             invalidate();
@@ -708,6 +704,8 @@ public class Face extends CanvasWatchFaceService {
             drawBackground(canvas);
             drawWatchFace(canvas);
         }
+
+
 
         private void drawBackground(Canvas canvas) {
 
@@ -728,9 +726,6 @@ public class Face extends CanvasWatchFaceService {
             fromBearing = 20;
              */
 
-            float[] triangle = {mCenterX+5,10f,mCenterX-20,50f,
-                    mCenterX-20,45f,mCenterX+20,45f,
-                    mCenterX+20,50f,mCenterX-5,10f};
             canvas.save();
             canvas.rotate(fromBearing+northBearing, mCenterX, mCenterY);
             canvas.drawText("^", mCenterX-15, 85, mFromPaint);
@@ -842,7 +837,7 @@ public class Face extends CanvasWatchFaceService {
 
             // MeasuredText speedT = new MeasuredText.Builder((Integer.toString(speed) + "").toCharArray()).build();
             canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 90, 120, mTinyPaint);
-            canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 300, 120, mTinyPaint);
+            canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 280, 120, mTinyPaint);
 
             String speedString = Integer.toString(speed);
             int speedPos = 250-speedString.length()*50;
