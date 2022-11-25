@@ -1,7 +1,7 @@
 package nl.mooiweertje.jppg;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +18,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.hardware.input.InputManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -34,11 +33,8 @@ import android.support.wearable.input.WearableButtons;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.text.Editable;
-import android.text.method.KeyListener;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
-import android.view.View;
 import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
@@ -61,6 +57,32 @@ import java.util.concurrent.TimeUnit;
  */
 public class Face extends CanvasWatchFaceService {
 
+    private static void setLocations() {
+        toLocation = new Location(LocationManager.GPS_PROVIDER);
+        fromLocation = new Location(LocationManager.GPS_PROVIDER);
+
+        // thuis
+        fromLocation.setLatitude(Location.convert("52.24321697210127"));
+        fromLocation.setLongitude(Location.convert("5.178221881420735"));
+
+        // KPN Toren
+        toLocation.setLatitude(Location.convert("52.24259487638992"));
+        toLocation.setLongitude(Location.convert("5.164555975802909"));
+
+        // Angela 52.21218396773057, 5.293164311690658
+        //toLocation.setLatitude(Location.convert("52.21218396773057"));
+        //toLocation.setLongitude(Location.convert("5.293164311690658"));
+
+        // Jumbo klein 52.23799891403412, 5.176062046858984
+        //toLocation.setLatitude(Location.convert("52.23799891403412"));
+        //toLocation.setLongitude(Location.convert("5.176062046858984"));
+
+        // Jumbo groot 52.23334058287597, 5.188652867731107
+        //toLocation.setLatitude(Location.convert("52.23334058287597"));
+        //toLocation.setLongitude(Location.convert("5.188652867731107"));
+    }
+
+
     /*
      * Updates rate in milliseconds for interactive mode. We update once a second to advance the
      * second hand.
@@ -69,6 +91,7 @@ public class Face extends CanvasWatchFaceService {
     private static final int FONTSIZE = 100;
     // public static final float PRESSURE_STANDARD_ATMOSPHERE_AMSTERDAM = 1015F;
     // public static final float PRESSURE_STANDARD_ATMOSPHERE_QNH = 1013.25F;
+    public static final int ORANGE = Color.argb(255,255,95,0);
 
     /**
      * Handler message id for updating the time periodically in interactive mode.
@@ -87,6 +110,8 @@ public class Face extends CanvasWatchFaceService {
     private static float northBearing = 0;
     private static float toBearing = 0;
     private static float fromBearing = 0;
+    private static float toDistance = 0;
+    private static float fromDistance = 0;
     private static Location toLocation;
     private static Location fromLocation;
     // LocationActivity locationActivity;
@@ -184,13 +209,17 @@ public class Face extends CanvasWatchFaceService {
         */
     }
 
-    private class SpeedListener implements LocationListener {
+    private class GPSListener implements LocationListener {
 
         @Override
         public void onLocationChanged(@NonNull Location location) {
             speed = (int) (location.getSpeed() * 3.6f);
             toBearing = location.bearingTo(toLocation);
             fromBearing = location.bearingTo(fromLocation);
+            toDistance = location.distanceTo(toLocation);
+            fromDistance = location.distanceTo(fromLocation);
+            toLocation.setBearing(northBearing+toBearing);
+            fromLocation.setBearing(northBearing+fromBearing);
         }
     }
 
@@ -313,6 +342,8 @@ public class Face extends CanvasWatchFaceService {
         public void onCreate(SurfaceHolder holder) {
             super.onCreate(holder);
 
+            Face.setLocations();
+
             //Intent intent=new Intent(Face.this, ButtonActivity.class);
             //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             // startActivity(intent);
@@ -357,7 +388,10 @@ public class Face extends CanvasWatchFaceService {
             magnetSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             magnetListener = new MagnetListener();
             sensorManager.registerListener(magnetListener, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            // KeyEvent.Callback
 
+            // KeyguardManager k = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            // k.
             /*
             inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
             ButtonListener buttonListener = new ButtonListener() ;
@@ -368,20 +402,11 @@ public class Face extends CanvasWatchFaceService {
 
             LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
             // LocationProvider lp = locationManager.getBestProvider(false);
+            /*
             List<String> lps = locationManager.getAllProviders();
             for (String s : lps) {
                 System.out.println(s);
             }
-
-            toLocation = new Location(LocationManager.GPS_PROVIDER);
-            fromLocation = new Location(LocationManager.GPS_PROVIDER);
-            fromLocation.setLatitude(Location.convert("52.24321697210127"));
-            fromLocation.setLongitude(Location.convert("5.178221881420735"));
-            toLocation.setLatitude(Location.convert("52.24259487638992"));
-            toLocation.setLongitude(Location.convert("5.164555975802909"));
-
-
-/*
             Criteria c = new Criteria();
             c.setSpeedRequired(true);
             System.out.println(locationManager.getBestProvider(c,false));
@@ -394,7 +419,7 @@ public class Face extends CanvasWatchFaceService {
 */
             try {
                 // ActivityCompat.requestPermissions(locationActivity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1234);
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new SpeedListener());
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, new GPSListener());
                 speed=-1;
             }catch (SecurityException ex) {
                 ex.printStackTrace();
@@ -428,7 +453,7 @@ public class Face extends CanvasWatchFaceService {
         private void initializeBackground() {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(Color.BLACK);
-            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.watchface_service_bg);
+            mBackgroundBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.face);
 
             /* Extracts colors from background image to improve watchface style. */
             Palette.from(mBackgroundBitmap).generate(new Palette.PaletteAsyncListener() {
@@ -473,7 +498,7 @@ public class Face extends CanvasWatchFaceService {
             mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
 */
             mAltiPaint = new Paint();
-            mAltiPaint.setColor(Color.YELLOW);
+            mAltiPaint.setColor(Color.WHITE);
             mAltiPaint.setAntiAlias(true);
             mAltiPaint.setTextSize(FONTSIZE);
 
@@ -496,12 +521,12 @@ public class Face extends CanvasWatchFaceService {
             mToPaint.setColor(Color.GREEN);
             mToPaint.setAntiAlias(true);
             mToPaint.setStrokeWidth(10);
-            mToPaint.setTextSize(100);
+            mToPaint.setTextSize(FONTSIZE);
 
             mFromPaint = new Paint();
-            mFromPaint.setColor(Color.BLUE);
+            mFromPaint.setColor(ORANGE);
             mFromPaint.setAntiAlias(true);
-            mFromPaint.setTextSize(100);
+            mFromPaint.setTextSize(FONTSIZE);
 
             /*
             mTickAndCirclePaint = new Paint();
@@ -562,9 +587,9 @@ public class Face extends CanvasWatchFaceService {
                 mSecondPaint.clearShadowLayer();
                 mTickAndCirclePaint.clearShadowLayer();
 */
-                mAltiPaint.setColor(Color.WHITE);
+                mAltiPaint.setColor(Color.GRAY);
                 mAltiPaint.setAntiAlias(false);
-                mTinyPaint.setColor(Color.WHITE);
+                mTinyPaint.setColor(Color.GRAY);
                 mTinyPaint.setAntiAlias(false);
 
             } else {
@@ -584,7 +609,7 @@ public class Face extends CanvasWatchFaceService {
                 mSecondPaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 mTickAndCirclePaint.setShadowLayer(SHADOW_RADIUS, 0, 0, mWatchHandShadowColor);
                 */
-                mAltiPaint.setColor(Color.YELLOW);
+                mAltiPaint.setColor(Color.WHITE);
                 mAltiPaint.setAntiAlias(true);
                 mTinyPaint.setColor(Color.CYAN);
                 mTinyPaint.setAntiAlias(true);
@@ -661,6 +686,11 @@ public class Face extends CanvasWatchFaceService {
             canvas.drawBitmap(mBackgroundBitmap, 0, 0, grayPaint);
         }
 
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
+            System.out.println("hey 2");
+            return false;
+        }
         /**
          * Captures tap event (and tap type). The {@link WatchFaceService#TAP_TYPE_TAP} case can be
          * used for implementing specific logic to handle the gesture.
@@ -698,8 +728,8 @@ public class Face extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            long now = System.currentTimeMillis();
-            mCalendar.setTimeInMillis(now);
+
+            mCalendar.setTimeInMillis(System.currentTimeMillis());
 
             drawBackground(canvas);
             drawWatchFace(canvas);
@@ -708,7 +738,6 @@ public class Face extends CanvasWatchFaceService {
 
 
         private void drawBackground(Canvas canvas) {
-
             if (mAmbient && (mLowBitAmbient || mBurnInProtection)) {
                 canvas.drawColor(Color.BLACK);
             } else if (mAmbient) {
@@ -716,25 +745,31 @@ public class Face extends CanvasWatchFaceService {
             } else {
                 canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
             }
+            canvas.drawText("m", 345, 220, mQuantityPaint);
+
+            canvas.drawText("K", 280, 70, mQuantityPaint); // 150
+            canvas.drawText("m", 276, 90, mQuantityPaint);
+            canvas.drawText("_", 282, 96, mQuantityPaint);
+            canvas.drawText("u", 280, 120, mQuantityPaint);
         }
 
         private void drawWatchFace(Canvas canvas) {
 
-            /*
-            northBearing = -10;
-            toBearing = 10;
-            fromBearing = 20;
-             */
+
+            //northBearing = 90;
+            //toBearing = 275;
+            //fromBearing = 350;
+
 
             canvas.save();
             canvas.rotate(fromBearing+northBearing, mCenterX, mCenterY);
-            canvas.drawText("^", mCenterX-15, 85, mFromPaint);
+            canvas.drawText("^", mCenterX-15, 75, mFromPaint);
             // canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
             canvas.rotate(toBearing-fromBearing, mCenterX, mCenterY);
-            canvas.drawText("^", mCenterX-15, 85, mToPaint);
+            canvas.drawText("^", mCenterX-15, 75, mToPaint);
             //canvas.drawCircle(mCenterX, 30, 20, mToPaint);
             canvas.rotate(-toBearing, mCenterX, mCenterY);
-            canvas.drawText("N", mCenterX-15, 50, mNorthPaint);
+            canvas.drawText("N", mCenterX-15, 40, mNorthPaint);
             // canvas.drawLines( triangle, mToPaint);
             canvas.restore();
 
@@ -835,22 +870,92 @@ public class Face extends CanvasWatchFaceService {
 
              */
 
-            // MeasuredText speedT = new MeasuredText.Builder((Integer.toString(speed) + "").toCharArray()).build();
-            canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 90, 120, mTinyPaint);
-            canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 280, 120, mTinyPaint);
 
+//            int speedPos = 300-speedString.length()*50;
+
+            // Time
+            //canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 90, 120, mTinyPaint);
+            //canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 270, 120, mTinyPaint);
+
+            // Speed y 200
             String speedString = Integer.toString(speed);
-            int speedPos = 250-speedString.length()*50;
-            canvas.drawText(speedString , speedPos, 200, mAltiPaint);
-            canvas.drawText("km/u", 270, 200, mQuantityPaint);
+            int speedPos = 260-speedString.length()*50; // 300
+            canvas.drawText(speedString , speedPos, 120, mAltiPaint); // 160
+
+            // Altitude y 300
             String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(sealevelPressure, pressure)).intValue());
-            int altPos = 250-altString.length()*50;
-            canvas.drawText(altString, altPos, 300, mAltiPaint);
-            canvas.drawText("m", 270, 300, mQuantityPaint);
+            int altPos = 320-altString.length()*50; // 300
+            canvas.drawText(altString, altPos, 220, mAltiPaint); // 300
             // canvas.drawText(String.valueOf(sealevelPressure).concat("0000000").substring(0,7), 150, 350, mTinyPaint);
 
+            // Distance y200
+            // toBearing
+            //if(northBearing<0) northBearing+=360;
+            if(fromLocation.getBearing()>180) fromLocation.setBearing(360-fromLocation.getBearing());
+            if(toLocation.getBearing()>180) toLocation.setBearing(360-toLocation.getBearing());
+            /*
+            System.out.println("bearN: " + northBearing);
+            System.out.println("bearF: " + fromBearing);
+            System.out.println("bearT: " + toBearing);
+            System.out.println("myBearF: " + fromLocation.getBearing());
+            System.out.println("myBearT: " + toLocation.getBearing());
+             */
+
+             if(toLocation.getBearing()<fromLocation.getBearing()) {
+                 String distanceString;
+                 if(toDistance>999F) {
+                     distanceString = String.valueOf(Float.valueOf(toDistance/1000F).intValue()) + "K";
+                 } else {
+                     distanceString = String.valueOf(Float.valueOf(toDistance).intValue());
+                 }
+                 int disPos = 270-distanceString.length()*50;
+                 // System.out.println(distanceString);
+                 canvas.drawText(distanceString, disPos, 310, mToPaint);
+             } else {
+                 String distanceString;
+                 if(fromDistance>999F) {
+                     distanceString = String.valueOf(Float.valueOf(fromDistance/1000F).intValue()) + "K";
+                 } else {
+                     distanceString = String.valueOf(Float.valueOf(fromDistance).intValue());
+                 }
+
+                 int disPos = 270-distanceString.length()*50;
+                 // System.out.println(distanceString);
+                 canvas.drawText(distanceString, disPos, 310, mFromPaint);
+             }
+            /*
+            if(toDistance<=fromDistance) {
+                String distanceString;
+                if(toDistance>999F) {
+                    distanceString = String.valueOf(Float.valueOf(toDistance/1000F).intValue()) + "K";
+                } else {
+                    distanceString = String.valueOf(Float.valueOf(toDistance).intValue());
+                }
+                int disPos = 270-distanceString.length()*50;
+                // System.out.println(distanceString);
+                canvas.drawText(distanceString, disPos, 310, mToPaint);
+            } else {
+                String distanceString;
+                if(fromDistance>999F) {
+                    distanceString = String.valueOf(Float.valueOf(fromDistance/1000F).intValue()) + "K";
+                } else {
+                    distanceString = String.valueOf(Float.valueOf(fromDistance).intValue());
+                }
+
+                int disPos = 270-distanceString.length()*50;
+                // System.out.println(distanceString);
+                canvas.drawText(distanceString, disPos, 310, mFromPaint);
+            }
+            String distanceString = String.valueOf(Float.valueOf(toDistance).intValue());
+            int disPos = 270-distanceString.length()*50;
+            System.out.println(distanceString);
+            canvas.drawText(distanceString, disPos, 320, mAltiPaint);
+
+             */
+
+            // battery charge y 370
             BatteryManager batteryManager = (BatteryManager) getSystemService(BATTERY_SERVICE);
-            canvas.drawText(batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + "%", 170, 350, mTinyPaint);
+            canvas.drawText(batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) + "%", 170, 370, mTinyPaint);
 
             /*
             canvas.drawText(String.valueOf(pressure).concat("0000000").substring(0,7), 100, 350, mTinyPaint);
@@ -924,4 +1029,5 @@ public class Face extends CanvasWatchFaceService {
             }
         }
     }
+
 }
