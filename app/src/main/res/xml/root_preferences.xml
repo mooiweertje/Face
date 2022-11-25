@@ -1,6 +1,32 @@
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory app:title="@string/messages_header">
+    <PreferenceCategory app:title="@string/baro_header">
+
+        <!-- DropDownPreference
+            app:title="@string/altitude_title"
+            app:entries="@array/alt_entries"
+            app:entryValues="@array/alt_values"
+            app:key="altitudeD1" />
+
+        <DropDownPreference
+            app:title="@string/altitude_title"
+            app:entries="@array/alt_entries"
+            app:entryValues="@array/alt_values"
+            app:key="altitudeD1" / -->
+
+        <EditTextPreference
+            android:title="@string/altitude_title"
+            android:key="altitudeD1"
+            android:selectable="true"
+            android:numeric="integer" />
+
+        <EditTextPreference
+            app:title="@string/altitude_title"
+            app:entries="@array/alt_entries"
+            app:entryValues="@array/alt_values"
+            app:key="altitudeD2"
+            app:useSimpleSummaryProvider="true" />
 
         <EditTextPreference
             app:key="signature"
@@ -17,19 +43,21 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="@string/sync_header">
+    <PreferenceCategory app:title="@string/compass_header">
 
         <SwitchPreferenceCompat
-            app:key="sync"
-            app:title="@string/sync_title" />
+            app:key="compass"
+            app:title="@string/compass_title" />
 
         <SwitchPreferenceCompat
-            app:dependency="sync"
-            app:key="attachment"
-            app:summaryOff="@string/attachment_summary_off"
-            app:summaryOn="@string/attachment_summary_on"
-            app:title="@string/attachment_title" />
+            app:dependency="compass"
+            app:key="to_direction"
+            app:title="@string/to_direction_title" />
 
+        <SwitchPreferenceCompat
+            app:dependency="compass"
+            app:key="from_direction"
+            app:title="@string/to_direction_title" />
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -29,7 +29,7 @@ public class ConfigActivity extends AppCompatActivity {
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
         System.out.println("Key: " + keyEvent.toString());
-        return false;
+        return super.onKeyDown(keyCode,keyEvent);
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat {

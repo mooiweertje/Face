@@ -1,11 +1,11 @@
 package nl.mooiweertje.jppg;
 
 import android.annotation.SuppressLint;
-import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -29,17 +29,15 @@ import android.os.Message;
 import androidx.annotation.NonNull;
 import androidx.palette.graphics.Palette;
 
-import android.support.wearable.input.WearableButtons;
+import android.preference.PreferenceManager;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
 import java.util.Calendar;
-import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -98,11 +96,6 @@ public class Face extends CanvasWatchFaceService {
      */
     private static final int MSG_UPDATE_TIME = 0;
 
-    private SensorManager sensorManager;
-    private Sensor pressureSensor;
-    private Sensor magnetSensor;
-    private PressureListener pressureListener;
-    private MagnetListener magnetListener;
     private static int speed = -1;
     private static float pressure = 0;
     private static boolean barofixed = false;
@@ -115,6 +108,12 @@ public class Face extends CanvasWatchFaceService {
     private static Location toLocation;
     private static Location fromLocation;
     // LocationActivity locationActivity;
+
+    private static boolean showCompass = false;
+    private static boolean showTodirection = false;
+    private static boolean showFromdirection = false;
+
+    private static final PreferenceListener preferenceListener = new PreferenceListener();
 
     @Override
     public Engine onCreateEngine() {
@@ -131,6 +130,58 @@ public class Face extends CanvasWatchFaceService {
         @Override
         public void onAccuracyChanged(Sensor sensor, int i) {
 
+        }
+    }
+
+    /*
+    private static class ConfigActivity extends AppCompatActivity {
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            System.out.println("SettingActive!");
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.settings_activity);
+            if (savedInstanceState == null) {
+                getSupportFragmentManager()
+                        .beginTransaction()
+                        .replace(R.id.settings, new nl.mooiweertje.jppg.ConfigActivity.SettingsFragment())
+                        .commit();
+            }
+            ActionBar actionBar = getSupportActionBar();
+            if (actionBar != null) {
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            }
+        }
+
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
+            System.out.println("Key: " + keyEvent.toString());
+            return super.onKeyDown(keyCode,keyEvent);
+        }
+
+        public static class SettingsFragment extends PreferenceFragmentCompat {
+            @Override
+            public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
+                System.out.println("onCreatePreferences!");
+                setPreferencesFromResource(R.xml.root_preferences, rootKey);
+            }
+        }
+    }
+
+     */
+    private static class PreferenceListener implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+            System.out.println("huh: " + sharedPreferences.getBoolean("compass", false) + "  " + s);
+            System.out.println("huh: " + sharedPreferences.getBoolean("to_direction", false) + "  " + s);
+            System.out.println("huh: " + sharedPreferences.getBoolean("from_direction", false) + "  " + s);
+            System.out.println("huh: " + sharedPreferences.getString("altitudeD1","5") + "  " + s);
+            System.out.println("huh: " + sharedPreferences.getString("altitudeD2","5") + "  " + s);
+
+            showCompass = sharedPreferences.getBoolean("compass", false);
+            showFromdirection = sharedPreferences.getBoolean("from_direction", false);
+            showTodirection = sharedPreferences.getBoolean("to_direction", false);
         }
     }
 
@@ -340,17 +391,23 @@ public class Face extends CanvasWatchFaceService {
         @SuppressLint({"NewApi", "MissingPermission"})
         @Override
         public void onCreate(SurfaceHolder holder) {
+
             super.onCreate(holder);
 
             Face.setLocations();
+
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(Face.this);
+            preferenceListener.onSharedPreferenceChanged(preferences, "");
+            preferences.registerOnSharedPreferenceChangeListener(preferenceListener);
+
 
             //Intent intent=new Intent(Face.this, ButtonActivity.class);
             //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             // startActivity(intent);
 
             //ntext context =Context.
-            int b = WearableButtons.getButtonCount(Face.this);
-            System.out.println("butts: " + b);
+            //int b = WearableButtons.getButtonCount(Face.this);
+            //System.out.println("butts: " + b);
 
             /*
             WearableButtons.ButtonInfo buttonInfo =
@@ -378,15 +435,15 @@ public class Face extends CanvasWatchFaceService {
 
             mCalendar = Calendar.getInstance();
 
-            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-            pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
-            pressureListener = new PressureListener();
+            Sensor pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+            PressureListener pressureListener = new PressureListener();
             sensorManager.registerListener(pressureListener, pressureSensor, SensorManager.SENSOR_DELAY_NORMAL);
 
             // magnetSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-            magnetSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-            magnetListener = new MagnetListener();
+            Sensor magnetSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+            MagnetListener magnetListener = new MagnetListener();
             sensorManager.registerListener(magnetListener, magnetSensor, SensorManager.SENSOR_DELAY_NORMAL);
             // KeyEvent.Callback
 
@@ -698,8 +755,8 @@ public class Face extends CanvasWatchFaceService {
                     // The user has started touching the screen.
                     break;
                 case TAP_TYPE_TOUCH_CANCEL:
-                    Toast.makeText(getApplicationContext(), R.string.messageF, Toast.LENGTH_SHORT).show();
-                    barofixed=true;
+                    // Toast.makeText(getApplicationContext(), R.string.messageF, Toast.LENGTH_SHORT).show();
+                    // barofixed=true;
                     break;
                 case TAP_TYPE_TAP:
                     if(!barofixed) {
@@ -756,17 +813,23 @@ public class Face extends CanvasWatchFaceService {
             //fromBearing = 350;
 
 
-            canvas.save();
-            canvas.rotate(fromBearing+northBearing, mCenterX, mCenterY);
-            canvas.drawText("^", mCenterX-15, 75, mFromPaint);
-            // canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
-            canvas.rotate(toBearing-fromBearing, mCenterX, mCenterY);
-            canvas.drawText("^", mCenterX-15, 75, mToPaint);
-            //canvas.drawCircle(mCenterX, 30, 20, mToPaint);
-            canvas.rotate(-toBearing, mCenterX, mCenterY);
-            canvas.drawText("N", mCenterX-15, 40, mNorthPaint);
-            // canvas.drawLines( triangle, mToPaint);
-            canvas.restore();
+            if(showCompass) {
+                canvas.save();
+                canvas.rotate(fromBearing + northBearing, mCenterX, mCenterY);
+                if (showTodirection) {
+                    canvas.drawText("^", mCenterX - 15, 75, mFromPaint);
+                }
+                // canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
+                canvas.rotate(toBearing - fromBearing, mCenterX, mCenterY);
+                if (showFromdirection) {
+                    canvas.drawText("^", mCenterX - 15, 75, mToPaint);
+                }
+                //canvas.drawCircle(mCenterX, 30, 20, mToPaint);
+                canvas.rotate(-toBearing, mCenterX, mCenterY);
+                canvas.drawText("N", mCenterX - 15, 40, mNorthPaint);
+                // canvas.drawLines( triangle, mToPaint);
+                canvas.restore();
+            }
 
 
             /*
@@ -868,9 +931,6 @@ public class Face extends CanvasWatchFaceService {
 
 //            int speedPos = 300-speedString.length()*50;
 
-            // Time
-            //canvas.drawText(String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY)), 90, 120, mTinyPaint);
-            //canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 270, 120, mTinyPaint);
 
             // Speed y 200
             String speedString = Integer.toString(speed);
@@ -896,28 +956,34 @@ public class Face extends CanvasWatchFaceService {
             System.out.println("myBearT: " + toLocation.getBearing());
              */
 
-             if(toLocation.getBearing()<fromLocation.getBearing()) {
-                 String distanceString;
-                 if(toDistance>999F) {
-                     distanceString = String.valueOf(Float.valueOf(toDistance/1000F).intValue()) + "K";
-                 } else {
-                     distanceString = String.valueOf(Float.valueOf(toDistance).intValue());
-                 }
-                 int disPos = 270-distanceString.length()*50;
-                 // System.out.println(distanceString);
-                 canvas.drawText(distanceString, disPos, 310, mToPaint);
-             } else {
-                 String distanceString;
-                 if(fromDistance>999F) {
-                     distanceString = String.valueOf(Float.valueOf(fromDistance/1000F).intValue()) + "K";
-                 } else {
-                     distanceString = String.valueOf(Float.valueOf(fromDistance).intValue());
-                 }
+            String distanceString;
+            int corX;
+            Paint paint;
+            if(showTodirection||showFromdirection) {
+                float distance;
+                if (toLocation.getBearing() < fromLocation.getBearing()) {
+                    distance = toDistance;
+                    paint = mToPaint;
+                } else {
+                    distance = fromDistance;
+                    paint = mFromPaint;
+                }
+                if (distance > 999F) {
+                    distanceString = String.valueOf(Float.valueOf(distance / 1000F).intValue()) + "K";
+                } else {
+                    distanceString = String.valueOf(Float.valueOf(distance).intValue());
+                }
+                corX = 270 - distanceString.length() * 50;
+                canvas.drawText(distanceString, corX, 310, paint);
 
-                 int disPos = 270-distanceString.length()*50;
-                 // System.out.println(distanceString);
-                 canvas.drawText(distanceString, disPos, 310, mFromPaint);
-             }
+            }  else {
+                // Time
+                String hour = String.valueOf(mCalendar.get(Calendar.HOUR_OF_DAY));
+                corX = 180 - hour.length() * 50;
+                canvas.drawText(hour, corX, 310, mAltiPaint);
+                canvas.drawText(":", 190, 310, mAltiPaint);
+                canvas.drawText(String.valueOf(mCalendar.get(Calendar.MINUTE)), 220, 310, mAltiPaint);
+            }
             /*
             if(toDistance<=fromDistance) {
                 String distanceString;
