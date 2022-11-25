@@ -686,11 +686,6 @@ public class Face extends CanvasWatchFaceService {
             canvas.drawBitmap(mBackgroundBitmap, 0, 0, grayPaint);
         }
 
-        @Override
-        public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
-            System.out.println("hey 2");
-            return false;
-        }
         /**
          * Captures tap event (and tap type). The {@link WatchFaceService#TAP_TYPE_TAP} case can be
          * used for implementing specific logic to handle the gesture.
