@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">jPPG</string>
     <string name="message">Baro cali</string>
-    <string name="messageF">Baro fixed</string>
+    <string name="location_message">Location access denied!</string>
     <string name="my_analog_name">jPPG</string>
     <string name="title_activity_settings">SettingsActivity</string>
 

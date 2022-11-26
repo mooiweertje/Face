@@ -517,6 +517,7 @@ public class Face extends CanvasWatchFaceService {
                 speed=-1;
             }catch (SecurityException ex) {
                 ex.printStackTrace();
+                Toast.makeText(getApplicationContext(), R.string.location_message, Toast.LENGTH_LONG).show();
                 speed=-2;
             } catch (IllegalArgumentException ex) {
                 ex.printStackTrace();
