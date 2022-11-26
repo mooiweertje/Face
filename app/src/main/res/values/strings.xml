@@ -17,8 +17,8 @@
 
     <!-- Sync Preferences -->
     <string name="compass_title">Show compass</string>
-    <string name="to_direction_title">Show to direction</string>
-    <string name="from_direction_title">Show to direction</string>
+    <string name="home_direction_title">Home direction</string>
+    <string name="destination_direction_title">Destination direction</string>
     <string name="calibrate_baro">Calibrate now</string>
     <string name="home_location_title">Home</string>
     <string name="destination_location_title">Destination</string>

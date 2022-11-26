@@ -67,12 +67,13 @@
         <SwitchPreferenceCompat
             app:dependency="compass"
             app:key="to_direction"
-            app:title="@string/to_direction_title" />
+            app:title="@string/destination_direction_title" />
 
         <SwitchPreferenceCompat
             app:dependency="compass"
             app:key="from_direction"
-            app:title="@string/to_direction_title" />
+            app:title="@string/home_direction_title" />
+
     </PreferenceCategory>
     <PreferenceCategory app:title="@string/version" />
 </PreferenceScreen>
