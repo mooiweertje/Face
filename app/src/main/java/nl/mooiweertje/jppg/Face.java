@@ -86,6 +86,7 @@ public class Face extends CanvasWatchFaceService {
     private static boolean showCompass = false;
     private static boolean showTodirection = false;
     private static boolean showFromdirection = false;
+    private static boolean showTimeDirection = false;
 
     private final PreferenceListener preferenceListener = new PreferenceListener();
 
@@ -797,6 +798,12 @@ public class Face extends CanvasWatchFaceService {
                     // barofixed=true;
                     break;
                 case TAP_TYPE_TAP:
+                    if(showTimeDirection) {
+                        showTimeDirection=false;
+                    } else {
+                        showTimeDirection=true;
+                    }
+
                     /*
                     if(!barofixed) {
                         Face.this.baroCalibrate(156);
@@ -1000,13 +1007,29 @@ public class Face extends CanvasWatchFaceService {
                     distance = fromDistance;
                     paint = mFromPaint;
                 }
-                if (distance > 999F) {
-                    distanceString = String.valueOf(Float.valueOf(distance / 1000F).intValue()) + "K";
+                if(showTimeDirection) {
+                    String timeString;
+                    float time = distance/speed/1000F;
+                    int hour = (int) time;
+                    if(hour < 9) {
+                        int minutes = (int) ((time - hour) * 60);
+                        timeString = hour + ":" + minutes;
+                    } else {
+                        timeString = ">9H";
+                    }
+                    corX = 310 - timeString.length() * 50;
+                    canvas.drawText(timeString, corX, 310, paint);
+
                 } else {
-                    distanceString = String.valueOf(Float.valueOf(distance).intValue());
+                    if (distance > 999F) {
+                        distanceString = String.valueOf(Float.valueOf(distance / 1000F).intValue()) + "K";
+                    } else {
+                        distanceString = String.valueOf(Float.valueOf(distance).intValue());
+                    }
+                    corX = 270 - distanceString.length() * 50;
+                    canvas.drawText(distanceString, corX, 310, paint);
                 }
-                corX = 270 - distanceString.length() * 50;
-                canvas.drawText(distanceString, corX, 310, paint);
+
 
             }  else {
                 // Time
