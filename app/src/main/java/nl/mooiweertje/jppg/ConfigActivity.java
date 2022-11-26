@@ -11,7 +11,7 @@ public class ConfigActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        System.out.println("SettingActive!");
+        // System.out.println("SettingActive!");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
         if (savedInstanceState == null) {
@@ -28,14 +28,14 @@ public class ConfigActivity extends AppCompatActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent keyEvent) {
-        System.out.println("Key: " + keyEvent.toString());
+        // System.out.println("Key: " + keyEvent.toString());
         return super.onKeyDown(keyCode,keyEvent);
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-            System.out.println("onCreatePreferences!");
+            // System.out.println("onCreatePreferences!");
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
         }
     }

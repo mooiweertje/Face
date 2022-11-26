@@ -8,6 +8,7 @@
     <!-- Preference Titles -->
     <string name="baro_header">Barometer</string>
     <string name="compass_header">Compass</string>
+    <string name="version">β1</string>
 
     <!-- Messages Preferences -->
     <string name="altitude_title">Calibration Altitude</string>

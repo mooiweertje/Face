@@ -73,5 +73,5 @@
             app:key="from_direction"
             app:title="@string/to_direction_title" />
     </PreferenceCategory>
-
+    <PreferenceCategory app:title="@string/version" />
 </PreferenceScreen>
