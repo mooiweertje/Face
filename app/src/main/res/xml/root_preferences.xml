@@ -12,19 +12,24 @@
             app:key="calibratenow"
             app:title="@string/calibrate_baro" />
 
-        <!-- DropDownPreference
-            app:title="@string/altitude_title"
-            app:entries="@array/alt_entries"
-            app:entryValues="@array/alt_values"
-            app:key="altitudeD1" />
+    </PreferenceCategory>
+    <PreferenceCategory app:title="@string/location_header">
 
         <DropDownPreference
-            app:title="@string/altitude_title"
-            app:entries="@array/alt_entries"
-            app:entryValues="@array/alt_values"
-            app:key="altitudeD1" / >
+            app:title="@string/home_location_title"
+            app:entries="@array/locationame"
+            app:entryValues="@array/locationvalue"
+            app:key="fromLocation"
+            app:useSimpleSummaryProvider="true" />
 
-        <EditTextPreference
+        <DropDownPreference
+            app:title="@string/destination_location_title"
+            app:entries="@array/locationame"
+            app:entryValues="@array/locationvalue"
+            app:key="toLocation"
+            app:useSimpleSummaryProvider="true" />
+
+        <!-- EditTextPreference
             android:title="@string/altitude_title"
             android:key="altitudeD1"
             android:selectable="true"

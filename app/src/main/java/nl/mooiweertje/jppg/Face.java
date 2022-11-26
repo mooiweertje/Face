@@ -55,32 +55,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class Face extends CanvasWatchFaceService {
 
-    private static void setLocations() {
-        toLocation = new Location(LocationManager.GPS_PROVIDER);
-        fromLocation = new Location(LocationManager.GPS_PROVIDER);
-
-        // thuis
-        fromLocation.setLatitude(Location.convert("52.24321697210127"));
-        fromLocation.setLongitude(Location.convert("5.178221881420735"));
-
-        // KPN Toren
-        toLocation.setLatitude(Location.convert("52.24259487638992"));
-        toLocation.setLongitude(Location.convert("5.164555975802909"));
-
-        // Angela 52.21218396773057, 5.293164311690658
-        //toLocation.setLatitude(Location.convert("52.21218396773057"));
-        //toLocation.setLongitude(Location.convert("5.293164311690658"));
-
-        // Jumbo klein 52.23799891403412, 5.176062046858984
-        //toLocation.setLatitude(Location.convert("52.23799891403412"));
-        //toLocation.setLongitude(Location.convert("5.176062046858984"));
-
-        // Jumbo groot 52.23334058287597, 5.188652867731107
-        //toLocation.setLatitude(Location.convert("52.23334058287597"));
-        //toLocation.setLongitude(Location.convert("5.188652867731107"));
-    }
-
-
     /*
      * Updates rate in milliseconds for interactive mode. We update once a second to advance the
      * second hand.
@@ -132,6 +106,36 @@ public class Face extends CanvasWatchFaceService {
             }
         }
     }
+
+    private Location createLocation(String preferenceLocationString) {
+        Location location = new Location(LocationManager.GPS_PROVIDER);
+        // fromLocation = new Location(LocationManager.GPS_PROVIDER);
+        String[] cooordinates = preferenceLocationString.split(",",3);
+        // System.out.println("huh2: " + cooordinates[1] + " " + cooordinates[2]);
+        location.setLatitude(Location.convert(cooordinates[1]));
+        location.setLongitude(Location.convert(cooordinates[2]));
+
+        // thuis
+        //fromLocation.setLatitude(Location.convert("52.24321697210127"));
+        //fromLocation.setLongitude(Location.convert("5.178221881420735"));
+
+        // KPN Toren
+        //toLocation.setLatitude(Location.convert("52.24259487638992"));
+        //toLocation.setLongitude(Location.convert("5.164555975802909"));
+
+        // Angela 52.21218396773057, 5.293164311690658
+        //toLocation.setLatitude(Location.convert("52.21218396773057"));
+        //toLocation.setLongitude(Location.convert("5.293164311690658"));
+
+        // Jumbo klein,52.23799891403412,5.176062046858984
+        //toLocation.setLatitude(Location.convert("52.23799891403412"));
+        //toLocation.setLongitude(Location.convert("5.176062046858984"));
+
+        // Jumbo groot,52.23334058287597,5.188652867731107
+        //toLocation.setLatitude(Location.convert("52.23334058287597"));
+        //toLocation.setLongitude(Location.convert("5.188652867731107"));
+        return location;
+    };
 
     private static class PressureListener implements SensorEventListener {
 
@@ -193,19 +197,26 @@ public class Face extends CanvasWatchFaceService {
             System.out.println("huh: " + sharedPreferences.getString("altitudeD1","5") + "  " + s);
             System.out.println("huh: " + sharedPreferences.getString("altitudeD2","5") + "  " + s);
 */
+            // System.out.println("huh: " + sharedPreferences.getString("toLocation","5") + "  " + s);
+            // System.out.println("huh: " + sharedPreferences.getString("fromLocation","5") + "  " + s);
+            //if("toLocation".equals(s)) {
+            fromLocation = createLocation(sharedPreferences.getString("fromLocation","Jannes,52.24321697210127,5.178221881420735"));
+            //} else if("fromLocation".equals(s)) {
+            toLocation = createLocation(sharedPreferences.getString("toLocation","Mast,52.24259487638992,5.164555975802909"));
+            //} else
+            showCompass = sharedPreferences.getBoolean("compass", false);
+            showFromdirection = sharedPreferences.getBoolean("from_direction", false);
+            showTodirection = sharedPreferences.getBoolean("to_direction", false);
+
             if("calibratenow".equals(s) && sharedPreferences.getBoolean("calibratenow", false)) {
                 // System.out.println("yayssssssssss: " );
-                sharedPreferences.getBoolean("calibratenow", false);
+                // sharedPreferences.getBoolean("calibratenow", false);
                 try {
                     Face.this.baroCalibrate(Integer.parseInt(sharedPreferences.getString("calibration_altitude", "17")));
                 } catch(NumberFormatException e) {
                     Face.this.baroCalibrate(17);
                 }
             }
-
-            showCompass = sharedPreferences.getBoolean("compass", false);
-            showFromdirection = sharedPreferences.getBoolean("from_direction", false);
-            showTodirection = sharedPreferences.getBoolean("to_direction", false);
         }
     }
 
@@ -289,12 +300,14 @@ public class Face extends CanvasWatchFaceService {
         @Override
         public void onLocationChanged(@NonNull Location location) {
             speed = (int) (location.getSpeed() * 3.6f);
-            toBearing = location.bearingTo(toLocation);
-            fromBearing = location.bearingTo(fromLocation);
-            toDistance = location.distanceTo(toLocation);
-            fromDistance = location.distanceTo(fromLocation);
-            toLocation.setBearing(northBearing+toBearing);
-            fromLocation.setBearing(northBearing+fromBearing);
+            if(showCompass) {
+                toBearing = location.bearingTo(toLocation);
+                fromBearing = location.bearingTo(fromLocation);
+                toDistance = location.distanceTo(toLocation);
+                fromDistance = location.distanceTo(fromLocation);
+                toLocation.setBearing(northBearing + toBearing);
+                fromLocation.setBearing(northBearing + fromBearing);
+            }
         }
     }
 
@@ -418,7 +431,7 @@ public class Face extends CanvasWatchFaceService {
 
             super.onCreate(holder);
 
-            Face.setLocations();
+            // Face.setLocations();
 
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(Face.this);
             preferenceListener.onSharedPreferenceChanged(preferences, "");
@@ -964,8 +977,6 @@ public class Face extends CanvasWatchFaceService {
             // Distance y200
             // toBearing
             //if(northBearing<0) northBearing+=360;
-            if(fromLocation.getBearing()>180) fromLocation.setBearing(360-fromLocation.getBearing());
-            if(toLocation.getBearing()>180) toLocation.setBearing(360-toLocation.getBearing());
             /*
             System.out.println("bearN: " + northBearing);
             System.out.println("bearF: " + fromBearing);
@@ -974,6 +985,8 @@ public class Face extends CanvasWatchFaceService {
             System.out.println("myBearT: " + toLocation.getBearing());
              */
 
+            if(fromLocation.getBearing()>180) fromLocation.setBearing(360-fromLocation.getBearing());
+            if(toLocation.getBearing()>180) toLocation.setBearing(360-toLocation.getBearing());
             String distanceString;
             int corX;
             Paint paint;
