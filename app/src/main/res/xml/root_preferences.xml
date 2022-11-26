@@ -3,6 +3,15 @@
 
     <PreferenceCategory app:title="@string/baro_header">
 
+        <EditTextPreference
+            app:title="@string/altitude_title"
+            app:key="calibration_altitude"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:key="calibratenow"
+            app:title="@string/calibrate_baro" />
+
         <!-- DropDownPreference
             app:title="@string/altitude_title"
             app:entries="@array/alt_entries"
@@ -13,13 +22,13 @@
             app:title="@string/altitude_title"
             app:entries="@array/alt_entries"
             app:entryValues="@array/alt_values"
-            app:key="altitudeD1" / -->
+            app:key="altitudeD1" / >
 
         <EditTextPreference
             android:title="@string/altitude_title"
             android:key="altitudeD1"
             android:selectable="true"
-            android:numeric="integer" />
+            android:inputType="numberDecimal" />
 
         <EditTextPreference
             app:title="@string/altitude_title"
@@ -39,7 +48,7 @@
             app:entryValues="@array/reply_values"
             app:key="reply"
             app:title="@string/reply_title"
-            app:useSimpleSummaryProvider="true" />
+            app:useSimpleSummaryProvider="true" / -->
 
     </PreferenceCategory>
 

@@ -113,11 +113,24 @@ public class Face extends CanvasWatchFaceService {
     private static boolean showTodirection = false;
     private static boolean showFromdirection = false;
 
-    private static final PreferenceListener preferenceListener = new PreferenceListener();
+    private final PreferenceListener preferenceListener = new PreferenceListener();
 
     @Override
     public Engine onCreateEngine() {
         return new Engine();
+    }
+
+    private void baroCalibrate(int caliAltitude) {
+        float altitude = caliAltitude + 0.5F;
+        if (SensorManager.getAltitude(sealevelPressure, pressure) < altitude) {
+            while (SensorManager.getAltitude(sealevelPressure, pressure) < altitude) {
+                sealevelPressure += 0.01;
+            }
+        } else {
+            while (SensorManager.getAltitude(sealevelPressure, pressure) > altitude) {
+                sealevelPressure -= 0.01;
+            }
+        }
     }
 
     private static class PressureListener implements SensorEventListener {
@@ -169,15 +182,26 @@ public class Face extends CanvasWatchFaceService {
     }
 
      */
-    private static class PreferenceListener implements SharedPreferences.OnSharedPreferenceChangeListener {
+    private class PreferenceListener implements SharedPreferences.OnSharedPreferenceChangeListener {
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+            /*
             System.out.println("huh: " + sharedPreferences.getBoolean("compass", false) + "  " + s);
             System.out.println("huh: " + sharedPreferences.getBoolean("to_direction", false) + "  " + s);
             System.out.println("huh: " + sharedPreferences.getBoolean("from_direction", false) + "  " + s);
             System.out.println("huh: " + sharedPreferences.getString("altitudeD1","5") + "  " + s);
             System.out.println("huh: " + sharedPreferences.getString("altitudeD2","5") + "  " + s);
+*/
+            if("calibratenow".equals(s) && sharedPreferences.getBoolean("calibratenow", false)) {
+                // System.out.println("yayssssssssss: " );
+                sharedPreferences.getBoolean("calibratenow", false);
+                try {
+                    Face.this.baroCalibrate(Integer.parseInt(sharedPreferences.getString("calibration_altitude", "17")));
+                } catch(NumberFormatException e) {
+                    Face.this.baroCalibrate(17);
+                }
+            }
 
             showCompass = sharedPreferences.getBoolean("compass", false);
             showFromdirection = sharedPreferences.getBoolean("from_direction", false);
@@ -759,20 +783,14 @@ public class Face extends CanvasWatchFaceService {
                     // barofixed=true;
                     break;
                 case TAP_TYPE_TAP:
+                    /*
                     if(!barofixed) {
+                        Face.this.baroCalibrate(156);
                         Toast.makeText(getApplicationContext(), R.string.message, Toast.LENGTH_SHORT).show();
-                        if (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
-                            while (SensorManager.getAltitude(sealevelPressure, pressure) < 17.5F) {
-                                sealevelPressure += 0.01;
-                            }
-                        } else {
-                            while (SensorManager.getAltitude(sealevelPressure, pressure) > 17.5F) {
-                                sealevelPressure -= 0.01;
-                            }
-                        }
                     } else {
                         Toast.makeText(getApplicationContext(), R.string.messageF, Toast.LENGTH_SHORT).show();
                     }
+                     */
                     break;
             }
             invalidate();
@@ -1090,5 +1108,4 @@ public class Face extends CanvasWatchFaceService {
             }
         }
     }
-
 }
