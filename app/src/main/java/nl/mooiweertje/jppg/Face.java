@@ -836,12 +836,12 @@ public class Face extends CanvasWatchFaceService {
             } else {
                 canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
             }
-            canvas.drawText("m", 345, 220, mQuantityPaint);
+            canvas.drawText("m", mCenterX + 135, 220, mQuantityPaint);
 
-            canvas.drawText("K", 280, 70, mQuantityPaint); // 150
-            canvas.drawText("m", 276, 90, mQuantityPaint);
-            canvas.drawText("_", 282, 96, mQuantityPaint);
-            canvas.drawText("u", 280, 120, mQuantityPaint);
+            canvas.drawText("K", mCenterX + 80, 70, mQuantityPaint); // 150
+            canvas.drawText("m", mCenterX + 76, 90, mQuantityPaint);
+            canvas.drawText("_", mCenterX + 82, 96, mQuantityPaint);
+            canvas.drawText("u", mCenterX + 80, 120, mQuantityPaint);
         }
 
         private void drawWatchFace(Canvas canvas) {
@@ -973,12 +973,12 @@ public class Face extends CanvasWatchFaceService {
 
             // Speed y 200
             String speedString = Integer.toString(speed);
-            int speedPos = 260-speedString.length()*50; // 300
+            int speedPos = (int) (mCenterX-speedString.length()*25); // 300
             canvas.drawText(speedString , speedPos, 120, mAltiPaint); // 160
 
             // Altitude y 300
             String altString = String.valueOf(Float.valueOf (SensorManager.getAltitude(sealevelPressure, pressure)).intValue());
-            int altPos = 320-altString.length()*50; // 300
+            int altPos = (int) (mCenterX-altString.length()*25); // 300
             canvas.drawText(altString, altPos, 220, mAltiPaint); // 300
             // canvas.drawText(String.valueOf(sealevelPressure).concat("0000000").substring(0,7), 150, 350, mTinyPaint);
 
@@ -1017,7 +1017,7 @@ public class Face extends CanvasWatchFaceService {
                     } else {
                         timeString = ">9H";
                     }
-                    corX = 310 - timeString.length() * 50;
+                    corX = (int) (mCenterX - timeString.length() * 25);
                     canvas.drawText(timeString, corX, 310, paint);
 
                 } else {
@@ -1026,7 +1026,7 @@ public class Face extends CanvasWatchFaceService {
                     } else {
                         distanceString = String.valueOf(Float.valueOf(distance).intValue());
                     }
-                    corX = 270 - distanceString.length() * 50;
+                    corX = (int) (mCenterX - distanceString.length() * 25);
                     canvas.drawText(distanceString, corX, 310, paint);
                 }
 
