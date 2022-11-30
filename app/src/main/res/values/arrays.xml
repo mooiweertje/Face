@@ -16,6 +16,8 @@
         <item>Mast</item>
         <item>Jumbo klein</item>
         <item>Jumbo groot</item>
+        <item>Groene Afslag</item>
+        <item>Here now</item>
     </string-array>
     <string-array name="locationvalue">
         <item>Jannes,52.24321697210127,5.178221881420735</item>
@@ -23,5 +25,7 @@
         <item>Mast,52.24259487638992,5.164555975802909</item>
         <item>Jumbo klein,52.23799891403412,5.176062046858984</item>
         <item>Jumbo groot,52.23334058287597,5.188652867731107</item>
+        <item>Groene Afslag,52.26595895023694,5.204822190433435</item>
+        <item>Here now</item>
     </string-array>
 </resources>

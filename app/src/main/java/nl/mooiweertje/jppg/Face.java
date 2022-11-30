@@ -109,33 +109,39 @@ public class Face extends CanvasWatchFaceService {
     }
 
     private Location createLocation(String preferenceLocationString) {
-        Location location = new Location(LocationManager.GPS_PROVIDER);
-        // fromLocation = new Location(LocationManager.GPS_PROVIDER);
-        String[] cooordinates = preferenceLocationString.split(",",3);
-        // System.out.println("huh2: " + cooordinates[1] + " " + cooordinates[2]);
-        location.setLatitude(Location.convert(cooordinates[1]));
-        location.setLongitude(Location.convert(cooordinates[2]));
 
-        // thuis
-        //fromLocation.setLatitude(Location.convert("52.24321697210127"));
-        //fromLocation.setLongitude(Location.convert("5.178221881420735"));
+        if("Here now".equals(preferenceLocationString)) {
+            return null;
+        } else {
 
-        // KPN Toren
-        //toLocation.setLatitude(Location.convert("52.24259487638992"));
-        //toLocation.setLongitude(Location.convert("5.164555975802909"));
+            Location location = new Location(LocationManager.GPS_PROVIDER);
+            // fromLocation = new Location(LocationManager.GPS_PROVIDER);
+            String[] cooordinates = preferenceLocationString.split(",",3);
+            // System.out.println("huh2: " + cooordinates[1] + " " + cooordinates[2]);
+            location.setLatitude(Location.convert(cooordinates[1]));
+            location.setLongitude(Location.convert(cooordinates[2]));
 
-        // Angela 52.21218396773057, 5.293164311690658
-        //toLocation.setLatitude(Location.convert("52.21218396773057"));
-        //toLocation.setLongitude(Location.convert("5.293164311690658"));
+            // thuis
+            //fromLocation.setLatitude(Location.convert("52.24321697210127"));
+            //fromLocation.setLongitude(Location.convert("5.178221881420735"));
 
-        // Jumbo klein,52.23799891403412,5.176062046858984
-        //toLocation.setLatitude(Location.convert("52.23799891403412"));
-        //toLocation.setLongitude(Location.convert("5.176062046858984"));
+            // KPN Toren
+            //toLocation.setLatitude(Location.convert("52.24259487638992"));
+            //toLocation.setLongitude(Location.convert("5.164555975802909"));
 
-        // Jumbo groot,52.23334058287597,5.188652867731107
-        //toLocation.setLatitude(Location.convert("52.23334058287597"));
-        //toLocation.setLongitude(Location.convert("5.188652867731107"));
-        return location;
+            // Angela 52.21218396773057, 5.293164311690658
+            //toLocation.setLatitude(Location.convert("52.21218396773057"));
+            //toLocation.setLongitude(Location.convert("5.293164311690658"));
+
+            // Jumbo klein,52.23799891403412,5.176062046858984
+            //toLocation.setLatitude(Location.convert("52.23799891403412"));
+            //toLocation.setLongitude(Location.convert("5.176062046858984"));
+
+            // Jumbo groot,52.23334058287597,5.188652867731107
+            //toLocation.setLatitude(Location.convert("52.23334058287597"));
+            //toLocation.setLongitude(Location.convert("5.188652867731107"));
+            return location;
+        }
     };
 
     private static class PressureListener implements SensorEventListener {
@@ -301,7 +307,14 @@ public class Face extends CanvasWatchFaceService {
         @Override
         public void onLocationChanged(@NonNull Location location) {
             speed = (int) (location.getSpeed() * 3.6f);
+
             if(showCompass) {
+                if(fromLocation == null) {
+                    fromLocation = location;
+                }
+                if(toLocation == null) {
+                    toLocation = location;
+                }
                 toBearing = location.bearingTo(toLocation);
                 fromBearing = location.bearingTo(fromLocation);
                 toDistance = location.distanceTo(toLocation);
