@@ -201,7 +201,7 @@ public class Face extends CanvasWatchFaceService {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
 
-            System.out.println("preference: " + sharedPreferences.getString(s, null) + "  (" + s + ")");
+            // System.out.println("preference: " + sharedPreferences.getString(s, null) + "  (" + s + ")");
             /*
             System.out.println("huh: " + sharedPreferences.getBoolean("compass", false) + "  " + s);
             System.out.println("huh: " + sharedPreferences.getBoolean("to_direction", false) + "  " + s);
@@ -443,6 +443,7 @@ public class Face extends CanvasWatchFaceService {
         private Paint mNorthPaint;
         private Paint mToPaint;
         private Paint mFromPaint;
+        private Paint mTimePaint;
         private Bitmap mBackgroundBitmap;
         private Bitmap mGrayBackgroundBitmap;
         private boolean mAmbient;
@@ -646,6 +647,12 @@ public class Face extends CanvasWatchFaceService {
             mFromPaint.setColor(ORANGE);
             mFromPaint.setAntiAlias(true);
             mFromPaint.setTextSize(FONTSIZE);
+
+            mTimePaint = new Paint();
+            mTimePaint.setColor(Color.CYAN);
+            mTimePaint.setAntiAlias(true);
+            mTimePaint.setTextSize(FONTSIZE);
+
 
             /*
             mTickAndCirclePaint = new Paint();
@@ -859,12 +866,19 @@ public class Face extends CanvasWatchFaceService {
             } else {
                 canvas.drawBitmap(mBackgroundBitmap, 0, 0, mBackgroundPaint);
             }
+            /*
             canvas.drawText("m", mCenterX + 135, 220, mQuantityPaint);
 
             canvas.drawText("K", mCenterX + 80, 70, mQuantityPaint); // 150
             canvas.drawText("m", mCenterX + 76, 90, mQuantityPaint);
             canvas.drawText("_", mCenterX + 82, 96, mQuantityPaint);
             canvas.drawText("u", mCenterX + 80, 120, mQuantityPaint);
+            for(int i=0;i<12;i++) {
+                canvas.rotate(30, mCenterX,mCenterY);
+                canvas.drawCircle(mCenterX, 30,3, mQuantityPaint);
+            }
+
+             */
         }
 
         private void drawWatchFace(Canvas canvas) {
@@ -877,13 +891,21 @@ public class Face extends CanvasWatchFaceService {
 
             if(showCompass) {
                 canvas.save();
-                canvas.rotate(fromBearing + northBearing, mCenterX, mCenterY);
-                if (showTodirection) {
+                int timeRotation = 0;
+                timeRotation += mCalendar.get(Calendar.MINUTE)>>1;
+//                System.out.println("time: " + timeRotation);
+                timeRotation += mCalendar.get(Calendar.HOUR) * 30;
+//                System.out.println("time: " + timeRotation);
+                canvas.rotate(timeRotation, mCenterX, mCenterY);
+                canvas.drawText("^", mCenterX - 15, 75, mAltiPaint);
+
+                canvas.rotate( fromBearing + northBearing - timeRotation, mCenterX, mCenterY);
+                if (showFromdirection) {
                     canvas.drawText("^", mCenterX - 15, 75, mFromPaint);
                 }
                 // canvas.drawCircle(mCenterX, 30, 20, mFromPaint);
                 canvas.rotate(toBearing - fromBearing, mCenterX, mCenterY);
-                if (showFromdirection) {
+                if (showTodirection) {
                     canvas.drawText("^", mCenterX - 15, 75, mToPaint);
                 }
                 //canvas.drawCircle(mCenterX, 30, 20, mToPaint);
@@ -1019,10 +1041,10 @@ public class Face extends CanvasWatchFaceService {
             String distanceString;
             int corX;
             Paint paint;
-            if(showTodirection||showFromdirection) {
+            float distance;
+            if(showTodirection && showFromdirection) {
                 if(fromLocation.getBearing()>180) fromLocation.setBearing(360-fromLocation.getBearing());
                 if(toLocation.getBearing()>180) toLocation.setBearing(360-toLocation.getBearing());
-                float distance;
                 if (toLocation.getBearing() < fromLocation.getBearing()) {
                     distance = toDistance;
                     paint = mToPaint;
@@ -1030,6 +1052,15 @@ public class Face extends CanvasWatchFaceService {
                     distance = fromDistance;
                     paint = mFromPaint;
                 }
+            } else if(showFromdirection) {
+                distance = fromDistance;
+                paint = mFromPaint;
+            } else {
+                distance = toDistance;
+                paint = mToPaint;
+            }
+
+            if(showTodirection||showFromdirection) {
                 if(showTimeDirection) {
                     String timeString;
                     float time = distance/speed/1000F;
