@@ -2,6 +2,8 @@
     <string name="app_name">jPPG</string>
     <string name="message">Baro cali</string>
     <string name="location_message">Location access denied!</string>
+    <string name="home_location_set">Home location here!</string>
+    <string name="to_location_set">Destination location here!</string>
     <string name="my_analog_name">jPPG</string>
     <string name="title_activity_settings">SettingsActivity</string>
 
